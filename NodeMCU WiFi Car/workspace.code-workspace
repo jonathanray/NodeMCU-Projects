@@ -1,0 +1,34 @@
+{
+	"folders": [
+		{
+			"name": "NodeMCU Test 01",
+			"path": "..\\NodeMCU Test 01"
+		},
+		{
+			"path": "..\\NodeMCU Test 02"
+		},
+		{
+			"path": "..\\NodeMCU IR Remote"
+		},
+		{
+			"path": "..\\NodeMCU IR Remote Speaker"
+		},
+		{
+			"name": "NodeMCU WiFi Car",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.vue": "vue",
+			"algorithm": "cpp",
+			"*.tcc": "cpp",
+			"vector": "cpp",
+			"functional": "cpp",
+			"random": "cpp",
+			"fstream": "cpp",
+			"type_traits": "cpp",
+			"tuple": "cpp"
+		}
+	}
+}

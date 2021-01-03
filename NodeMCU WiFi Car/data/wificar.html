@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Wi-Fi Car</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        html * {
+            font-size: 30px;
+        }
+
+        .big {
+            min-height: 150px;
+            min-width: 300px;
+        }
+
+        .btngrp {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .center {
+            width: 100%;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        function fetchDebug(url, data) {
+            if (window.location.href.startsWith('file://')) {
+                console.log(`fetch('${url}', ${JSON.stringify(data, null, '  ')})`);
+                return Promise.resolve();
+            }
+            return fetch(url, data);
+        }
+        function execute(statements) {
+            if (statements === undefined) {
+                statements = document.getElementById('statements').value.replace(/;\n/g, ';').replace(/\n/, ';').trim();
+            }
+            return fetchDebug('/execute', {
+                method: 'post',
+                headers: {
+                    'Content-type': 'application/x-www-form-urlencoded'
+                },
+                body: `statements=${statements}`
+            });
+        }
+        function move(wheel, direction) {
+            const speed = document.getElementById('speed').value;
+            return fetchDebug('/move', {
+                method: 'post',
+                headers: {
+                    'Content-type': 'application/x-www-form-urlencoded'
+                },
+                body: `wheel=${wheel}&direction=${direction}&speed=${speed}`
+            });
+        }
+        function spin(direction) {
+            const speed = document.getElementById('speed').value;
+            return fetchDebug('/spin', {
+                method: 'post',
+                headers: {
+                    'Content-type': 'application/x-www-form-urlencoded'
+                },
+                body: `direction=${direction}&speed=${speed}`
+            });
+        }
+        function stop(wheel) {
+            return fetchDebug('/stop', {
+                method: 'post',
+                headers: {
+                    'Content-type': 'application/x-www-form-urlencoded'
+                },
+                body: `wheel=${wheel}`
+            });
+        }
+        function handleMoveEvent(btn, wheel, direction) {
+            hideButton(btn);
+            btn.disabled = true;
+
+            return move(wheel, direction[0]).then(() => {
+                btn.disabled = false;
+                revertButtons(btn);
+                return true;
+            });
+        }
+        function handleSpinEvent(btn, direction) {
+            hideButton(btn);
+            btn.disabled = true;
+
+            const speed = document.getElementById('speed').value;
+            return spin(direction).then(() => {
+                btn.disabled = false;
+                revertButtons(btn);
+                return true;
+            });
+        }
+        function handleStopEvent(btn, wheel) {
+            if (!btn.id.endsWith('Stop')) {
+                hideButton(btn);
+            }
+            btn.disabled = true;
+
+            return stop(wheel || 'A').then(() => {
+                btn.disabled = false;
+                revertButtons();
+                return true;
+            });
+        }
+        function hideButton(btn) {
+            btn.classList.add('hidden');
+            document.getElementById(`${btn.id}Stop`).classList.remove('hidden');
+        }
+        function revertButton(btn) {
+            btn.classList.remove('hidden');
+            document.getElementById(`${btn.id}Stop`).classList.add('hidden');
+        }
+        function revertButtons(excludeBtn) {
+            Array.from(document.querySelectorAll('.btngrp button')).forEach(btn => {
+                if (excludeBtn && btn.id.startsWith(excludeBtn.id)) return;
+
+                if (btn.id.endsWith('Stop')) {
+                    btn.classList.add('hidden');
+                } else {
+                    btn.classList.remove('hidden');
+                }
+            });
+        }
+        function registerClickEvent(btn, callback) {
+
+        }
+        window.addEventListener('load', () => {
+            Array.from(document.querySelectorAll('.btngrp button')).forEach(btn => {
+                const stopBtn = btn.cloneNode();
+                stopBtn.id = `${btn.id}Stop`;
+                stopBtn.innerText = 'STOP';
+                stopBtn.classList.add('hidden');
+
+                stopBtn.addEventListener('click', e => {
+                    const btn = e.target;
+                    btn.disabled = true;
+                    return handleStopEvent(btn, 'A').then(() => {
+                        revertButtons();
+                        btn.disabled = false;
+                    });
+                });
+
+                btn.after(stopBtn);
+            });
+            document.getElementById('stopAll').addEventListener('click', (e) => {
+                return handleStopEvent(e.target, 'A');
+            });
+
+            document.getElementById('leftForward').addEventListener('click', (e) => {
+                return handleMoveEvent(e.target, 'L', 'F');
+            });
+
+            document.getElementById('leftBackward').addEventListener('click', (e) => {
+                return handleMoveEvent(e.target, 'L', 'B');
+            });
+
+            document.getElementById('rightForward').addEventListener('click', (e) => {
+                return handleMoveEvent(e.target, 'R', 'F');
+            });
+
+            document.getElementById('rightBackward').addEventListener('click', (e) => {
+                return handleMoveEvent(e.target, 'R', 'B');
+            });
+
+            document.getElementById('allForward').addEventListener('click', (e) => {
+                return handleMoveEvent(e.target, 'A', 'F');
+            });
+
+            document.getElementById('allBackward').addEventListener('click', (e) => {
+                return handleMoveEvent(e.target, 'A', 'B');
+            });
+
+            document.getElementById('spinLeft').addEventListener('click', (e) => {
+                return handleSpinEvent(e.target, 'L');
+            });
+
+            document.getElementById('spinRight').addEventListener('click', (e) => {
+                return handleSpinEvent(e.target, 'R');
+            });
+        });
+    </script>
+
+    <!-- <textarea id="statements" rows="5" cols="50">
+move('A', 'F', 0.5);
+delay(3000);
+stop('A');
+    </textarea>
+    <div><button onclick="execute()">Execute</button></div>
+
+    <br /> -->
+    <!-- <br /> -->
+
+    <div class="btngrp">
+        <div>
+            <div><button id="leftForward" class="big">Left Forward</button></div>
+            <div><button id="leftBackward" class="big">Left Backward</button></div>
+        </div>
+        <div>
+            <div>
+                <button id="spinLeft" class="big">Spin Left</button>
+                <button id="spinRight" class="big">Spin Right</button>
+            </div>
+            <div class="center">
+                <select id="speed" class="big">
+                    <option value="1.00">100%</option>
+                    <option value="0.90">90%</option>
+                    <option value="0.80">80%</option>
+                    <option value="0.70">70%</option>
+                    <option value="0.60">60%</option>
+                    <option value="0.50" selected>50%</option>
+                    <option value="0.40">40%</option>
+                    <option value="0.30">30%</option>
+                    <option value="0.20">20%</option>
+                    <option value="0.10">10%</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <div><button id="rightForward" class="big">Right Forward</button></div>
+            <div><button id="rightBackward" class="big">Right Backward</button></div>
+        </div>
+    </div>
+    <br /><br />
+    <div class="btngrp">
+        <div><button id="allForward" class="big">Forward</button></div>
+        <div class="center"><button id="stopAll" class="big">STOP</button></div>
+        <div><button id="allBackward" class="big">Backward</button></div>
+    </div>
+</body>
+
+</html>
